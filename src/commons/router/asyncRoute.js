@@ -3,6 +3,7 @@ import { isArray } from 'lodash'
 import { Observable } from 'rxjs/Observable'
 import { Subject } from 'rxjs/Subject'
 import { injectReducers } from 'actions/registry'
+import { injectEpics } from 'actions/registry'
 import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/takeUntil'
 import 'rxjs/add/observable/zip'
@@ -20,7 +21,7 @@ function esModule(module, forceArray) {
   return forceArray ? [defualted] : defualted
 }
 
-export default function asyncRoute(getComponent, getReducers) {
+export default function asyncRoute(getComponent, getReducers, getEpics) {
   return class AsyncRoute extends Component {
     static contextTypes = {
       store: PropTypes.shape({
@@ -30,17 +31,20 @@ export default function asyncRoute(getComponent, getReducers) {
 
     static Component = null
     static ReducersLoaded = false
+    static EpicsLoaded = false
 
     state = {
       Component: AsyncRoute.Component,
-      ReducersLoaded: AsyncRoute.ReducersLoaded
+      ReducersLoaded: AsyncRoute.ReducersLoaded,
+      EpicsLoaded: AsyncRoute.EpicsLoaded
     }
 
     componentWillMount() {
-      const { Component, ReducersLoaded } = this.state
+      const { Component, ReducersLoaded, EpicsLoaded } = this.state
       const shouldLoadReducers = !ReducersLoaded && getReducers
+      const shouldLoadEpics = !EpicsLoaded && getEpics
 
-      if (!Component || shouldLoadReducers) {
+      if (!Component || shouldLoadReducers || shouldLoadEpics) {
         this._componentWillUnmountSubject = new Subject()
 
         const streams = [
@@ -66,6 +70,17 @@ export default function asyncRoute(getComponent, getReducers) {
               })
               .takeUntil(this._componentWillUnmountSubject)
           )
+        }
+
+        if (shouldLoadEpics) {
+            streams.push(
+                Observable.fromPromise(getEpics())
+                .map(epics => {
+                  this.context.store.dispatch(injectEpics(epics))
+                  AsyncRoute.EpicsLoaded = true
+                })
+                .takeUntil(this._componentWillUnmountSubject)
+            )
         }
 
         Observable.zip(...streams)
