@@ -2,8 +2,6 @@ import React, { Component, PropTypes } from 'react'
 import { isArray } from 'lodash'
 import { Observable } from 'rxjs/Observable'
 import { Subject } from 'rxjs/Subject'
-import { injectReducers } from 'actions/registry'
-import { injectEpics } from 'actions/registry'
 import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/takeUntil'
 import 'rxjs/add/observable/zip'
@@ -21,13 +19,8 @@ function esModule(module, forceArray) {
   return forceArray ? [defualted] : defualted
 }
 
-export default function asyncRoute(getComponent, getReducers, getEpics) {
+export default function asyncRoute(getComponent, getReducers, getEpics, beforeMount = Promise.resolve()) {
   return class AsyncRoute extends Component {
-    static contextTypes = {
-      store: PropTypes.shape({
-        dispatch: PropTypes.func.isRequired
-      })
-    }
 
     static Component = null
     static ReducersLoaded = false
@@ -40,6 +33,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
     }
 
     componentWillMount() {
+      console.log(`COMPONENT WILL MOUNT`, this.context)
       const { Component, ReducersLoaded, EpicsLoaded } = this.state
       const shouldLoadReducers = !ReducersLoaded && getReducers
       const shouldLoadEpics = !EpicsLoaded && getEpics
@@ -54,6 +48,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
             : Observable.fromPromise(getComponent())
                 .map(esModule)
                 .map(Component => {
+                  console.log(`LOADED`, Component)
                   AsyncRoute.Component = Component
                   return Component
                 })
@@ -65,22 +60,24 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
             Observable.fromPromise(getReducers())
               .map(module => esModule(module, true))
               .map(reducers => {
-                this.context.store.dispatch(injectReducers(reducers))
+                this.context.registerReducers(reducers)
                 AsyncRoute.ReducersLoaded = true
               })
               .takeUntil(this._componentWillUnmountSubject)
           )
+          console.log(this.state)
         }
 
         if (shouldLoadEpics) {
             streams.push(
                 Observable.fromPromise(getEpics())
                 .map(epics => {
-                  this.context.store.dispatch(injectEpics(epics))
+                  this.context.registerEpics(epics)
                   AsyncRoute.EpicsLoaded = true
                 })
                 .takeUntil(this._componentWillUnmountSubject)
             )
+            console.log(this.state)
         }
 
         Observable.zip(...streams)
@@ -89,7 +86,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
             if (this._mounted) {
               this.setState({Component})
             } else {
-              this.state.Component = Component
+              this.setState({Component})
             }
 
             this._componentWillUnmountSubject.unsubscribe()
@@ -109,6 +106,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
     }
 
     render() {
+      console.log(this.state)
       const { Component } = this.state
       return Component ? <Component {...this.props} /> : null
     }

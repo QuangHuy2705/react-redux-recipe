@@ -2,8 +2,8 @@ import { BehaviorSubject } from 'rxjs';
 import { combineEpics, createEpicMiddleware  } from 'redux-observable';
 import { createStore, applyMiddleware, combineReducers, compose } from 'redux';
 import { mergeMap } from 'rxjs/operators'
-import { epic1, epic2 } from './epics/index'
-import { recompose } from 'recompose'
+import { compose as recompose, defaultProps } from 'recompose'
+import StoreContainer from './StoreContainer.js'
 
 const reduceReducers = (reducers) => (state, action) =>
   reducers.reduce((result, reducer) => (
@@ -15,7 +15,7 @@ const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 class StoreBuilder {
     constructor() {
         this.store = null
-        this.epicRegistry = [epic1, epic2]
+        this.epicRegistry = []
         this.epic$ = new BehaviorSubject(combineEpics(...this.epicRegistry))
         this.epic$.subscribe((epic) => {
             console.log(`ADDED NEW EPIC`)
@@ -23,7 +23,6 @@ class StoreBuilder {
         this.rootEpic = (action$, state$) => {
             return this.epic$.pipe(
                 mergeMap(epic => {
-                    console.log(epic)
                     return epic(action$, state$)
                 })
             )
@@ -55,17 +54,17 @@ class StoreBuilder {
     }
 
     createStore = () => {
-        console.log(this.rootEpic)
         const epicMiddleware = createEpicMiddleware();
         this.store = createStore(this.createRootReducer(), composeEnhancers(applyMiddleware(epicMiddleware)));
-        epicMiddleware.run(this.rootEpic);
+        epicMiddleware.run(this.rootEpic)
+        return this
     }
 
     refreshStore = () => {
         this.store.replaceReducer(this.createRootReducer());
     }
 
-    withRefreshedStore = importPromise => {
+    withRefreshedStore = (importPromise) => {
         return importPromise
             .then(module => {
                 this.refreshStore()
@@ -76,8 +75,15 @@ class StoreBuilder {
             })
     }
 
-    createStoreProvider(store) {
-        const enhance = 
+    createStoreContainer() {
+        const enhance = recompose(
+            defaultProps({
+                store: this.store,
+                registerReducers: this.registerReducers.bind(this),
+                registerEpics: this.registerEpics.bind(this)
+            })
+        )
+        return enhance(StoreContainer)
     }
 
 }

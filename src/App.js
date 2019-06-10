@@ -1,29 +1,26 @@
 import React from 'react';
 import './App.css';
 import { BrowserRouter, Switch, Route } from 'react-router-dom'
-import { Provider } from 'react-redux'
 import Loadable from 'react-loadable'
-import { withRefreshedStore } from './store/store'
-import storeManager from './store/store'
 import {default as Builder} from './store/index'
 
 const Main = Loadable({
-  loader: () => withRefreshedStore(import('./Main')),
+  loader: () => import('./components/Main/index'),
   loading: () => <div>Loading...</div>
 })
 
-const StoreBuilder = new Builder()
+const StoreContainer = new Builder().createStore().createStoreContainer()
 
-function App() {
+function App(props) {
   return (
     <div className="App">
-      <Provider store={StoreBuilder.createStore()}>
+      <StoreContainer props={props}>
         <BrowserRouter>
           <Switch>
             <Route exact path='/' component={Main}/>
           </Switch>
         </BrowserRouter>
-      </Provider> 
+      </StoreContainer> 
     </div>
   );
 }
