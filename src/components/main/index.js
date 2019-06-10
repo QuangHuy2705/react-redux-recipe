@@ -5,5 +5,4 @@ const container = asyncRoute(
     () => import('./main.reducers.js'),
     () => import('./main.epics.js'),
 )
-
 export default container

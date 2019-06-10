@@ -42,6 +42,7 @@ class StoreBuilder {
     registerEpics = epic => {
         if (this.epicRegistry.indexOf(epic) === -1) {
             this.epicRegistry.push(epic);
+            console.log(epic)
             this.epic$.next(epic);
         }
     }
@@ -55,9 +56,9 @@ class StoreBuilder {
     }
 
     createStore = () => {
-        const epicMiddleware = createEpicMiddleware();
-        this.store = createStore(this.createRootReducer(), composeEnhancers(applyMiddleware(epicMiddleware)));
+        const epicMiddleware = createEpicMiddleware()
         epicMiddleware.run(this.rootEpic)
+        this.store = createStore(this.createRootReducer(), composeEnhancers(applyMiddleware(epicMiddleware)));
         return this
     }
 
