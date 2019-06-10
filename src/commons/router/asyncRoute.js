@@ -23,13 +23,12 @@ function esModule(module, forceArray) {
 
 
 export default function asyncRoute(getComponent, getReducers, getEpics) {
-  console.log(`a`)
   return class AsyncRoute extends Component {
     static contextTypes = {
       store: PropTypes.object.isRequired,
       registerEpics: PropTypes.func.isRequired,
       registerReducers: PropTypes.func.isRequired,
-      withRefreshedStore: PropTypes.func.isRequired,
+      // withRefreshedStore: PropTypes.func.isRequired,
     }
 
     static Component = null
@@ -44,7 +43,6 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
     }
 
     componentDidMount() {
-      console.log(`here`, this.context)
       const { Component, ReducersLoaded, EpicsLoaded } = this.state
       const shouldLoadReducers = !ReducersLoaded && getReducers
       const shouldLoadEpics = !EpicsLoaded && getEpics
@@ -52,7 +50,6 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
 
       if (!Component || shouldLoadReducers || shouldLoadEpics) {
         this._componentWillUnmountSubject = new Subject()
-        console.log(`here`)
         const streams = [
           Component
             ? Observable.of(Component)
@@ -76,8 +73,9 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
                 registerReducers(reducers)
                 AsyncRoute.ReducersLoaded = true
               })
+
               .takeUntil(this._componentWillUnmountSubject)
-          )
+              )
           console.log(this.state)
         }
 
@@ -91,18 +89,16 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
                 })
                 .takeUntil(this._componentWillUnmountSubject)
             )
-            console.log(this.state)
         }
         Observable.zip(...streams)
         .takeUntil(this._componentWillUnmountSubject)
         .subscribe(
           ([AsyncComponent]) => {
             this.setState({ Component: AsyncComponent })
-            console.log(`here`, this.state)
-
             this._componentWillUnmountSubject.unsubscribe()
           },
           error => {
+            console.log(error)
             this.setState({ error })
           },
         )
@@ -119,7 +115,6 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
     }
 
     render() {
-      console.log(`here`, this.state)
       const { Component } = this.state
       return Component ? <Component {...this.props} /> : null
     }

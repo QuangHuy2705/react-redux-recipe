@@ -1,11 +1,10 @@
 import { BehaviorSubject } from 'rxjs';
 import { combineEpics, createEpicMiddleware } from 'redux-observable';
 import { createStore, applyMiddleware, combineReducers, compose } from 'redux';
-import { mergeMap, filter, mapTo } from 'rxjs/operators'
-import { epic1, epic2 } from './epics/index'
+import { mergeMap } from 'rxjs/operators'
 import { compose as recompose, defaultProps } from 'recompose'
-import StoreContainer from './store_provider'
-import { noop, functions, isObject } from 'lodash'
+import StoreContainer from './StoreContainer.js'
+import { noop, functions } from 'lodash'
 
 const reduceReducers = (reducers) => (state, action) =>
     reducers.reduce((result, reducer) => (
@@ -24,13 +23,13 @@ const normalizeEpic = (epic = noop, namespace = 'main') => {
   return epic
 }
 
-const setFnName = (fn, name) =>
-  Object.defineProperty(fn, 'name', { value: name })
+// const setFnName = (fn, name) =>
+//   Object.defineProperty(fn, 'name', { value: name })
 
-const normalizeReducer = (key, reducer) => {
-    const temp = reducer || noop
-    return setFnName(temp, key)
-  }
+// const normalizeReducer = (key, reducer) => {
+//     const temp = reducer || noop
+//     return setFnName(temp, key)
+//   }
 
 class StoreBuilder {
     constructor() {
@@ -52,29 +51,29 @@ class StoreBuilder {
     }
  
     registerReducers = reducerMap => {
-        // Object.entries(reducerMap).forEach(([name, reducer]) => {
-        //     if (!this.reducerMap[name]) this.reducerMap[name] = [];
+        Object.entries(reducerMap).forEach(([name, reducer]) => {
+            if (!this.reducerMap[name]) this.reducerMap[name] = [];
 
-        //     this.reducerMap[name].push(reducer);
-        // });
-        // this.store.replaceReducer(this.createRootReducer());
-        if (isObject(reducerMap)) {
-            let appendedReducer = Map()
-            functions(reducerMap).forEach(reducerKey => {
-              if (this.reducerRegistry.has(reducerKey)) {
-                return this
-              } else {
-                const reducer = normalizeReducer(
-                  reducerKey,
-                  reducerMap[`${reducerKey}`],
-                )
-                appendedReducer = appendedReducer.set(reducerKey, reducer)
-              }
-            })
-            this.reducerRegistry = this.reducerRegistry.merge(appendedReducer)
-            this.updateReducers()
-            return this
-          }
+            this.reducerMap[name].push(reducer);
+        });
+        this.store.replaceReducer(this.createRootReducer());
+        // if (isObject(reducerMap)) {
+        //     let appendedReducer = {}
+        //     functions(reducerMap).forEach(reducerKey => {
+        //       if (this.reducerMap.includes(reducerKey)) {
+        //         return this
+        //       } else {
+        //         const reducer = normalizeReducer(
+        //           reducerKey,
+        //           reducerMap[`${reducerKey}`],
+        //         )
+        //         appendedReducer[reducerKey] = reducer
+        //       }
+        //     })
+        //     this.reducerRegistry = this.reducerMap.merge(appendedReducer)
+        //     this.updateReducers()
+        //     return this
+        //   }
     }
 
     updateReducers() {

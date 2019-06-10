@@ -2,7 +2,6 @@ import React from 'react'
 import Props from 'prop-types'
 import { Provider } from 'react-redux'
 import { withContext } from 'recompose'
-import Test from './test'
 
 const contextTypes = {
     store: Props.object,
@@ -27,7 +26,6 @@ class StoreContainer extends React.Component {
         console.log(this.props.store)
         return (
             <Provider store={store}>
-                <Test />
                 <div>
                     {children || null}
                 </div>

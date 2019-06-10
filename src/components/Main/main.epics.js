@@ -1,4 +1,4 @@
-import { pipe, mergeMap, mapTo, filter } from 'rxjs/operators'
+import { mapTo, filter } from 'rxjs/operators'
 
 export default function epic1(action$, state) {
     return action$.pipe(

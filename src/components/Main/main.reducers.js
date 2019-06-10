@@ -1,4 +1,4 @@
-export default function MainReducer(state = {test: 'test'}, action) {
+export default function MainReducer(state = {'wow': 'test'}, action) {
     switch(action.type) {
         case 'test':
             return {test: 'test'}
