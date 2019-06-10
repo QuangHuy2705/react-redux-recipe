@@ -2,24 +2,25 @@ import React from 'react';
 import './App.css';
 import { BrowserRouter, Switch, Route } from 'react-router-dom'
 import Loadable from 'react-loadable'
-import {default as Builder} from './store/index'
+import StoreBuilder from './store/index'
 
-const Main = Loadable({
-  loader: () => import('./components/Main/index'),
-  loading: () => <div>Loading...</div>
-})
+// const Main = Loadable({
+//   loader: () => import('./components/main/index.js'),
+//   loading: () => <div>Loading...</div>,
+//   timeout: 5000,
+// })
 
-const StoreContainer = new Builder().createStore().createStoreContainer()
+const StoreContainer = StoreBuilder.createStore().createStoreProvider()
 
 function App(props) {
   return (
     <div className="App">
-      <StoreContainer props={props}>
-        <BrowserRouter>
+      <StoreContainer>
+        {/* <BrowserRouter>
           <Switch>
             <Route exact path='/' component={Main}/>
           </Switch>
-        </BrowserRouter>
+        </BrowserRouter> */}
       </StoreContainer> 
     </div>
   );

@@ -1,4 +1,5 @@
-import React, { Component, PropTypes } from 'react'
+import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import { isArray } from 'lodash'
 import { Observable } from 'rxjs/Observable'
 import { Subject } from 'rxjs/Subject'
@@ -19,8 +20,17 @@ function esModule(module, forceArray) {
   return forceArray ? [defualted] : defualted
 }
 
-export default function asyncRoute(getComponent, getReducers, getEpics, beforeMount = Promise.resolve()) {
+
+
+export default function asyncRoute(getComponent, getReducers, getEpics) {
+  console.log(`a`)
   return class AsyncRoute extends Component {
+    static contextTypes = {
+      store: PropTypes.object.isRequired,
+      registerEpics: PropTypes.func.isRequired,
+      registerReducers: PropTypes.func.isRequired,
+      withRefreshedStore: PropTypes.func.isRequired,
+    }
 
     static Component = null
     static ReducersLoaded = false
@@ -29,18 +39,20 @@ export default function asyncRoute(getComponent, getReducers, getEpics, beforeMo
     state = {
       Component: AsyncRoute.Component,
       ReducersLoaded: AsyncRoute.ReducersLoaded,
-      EpicsLoaded: AsyncRoute.EpicsLoaded
+      EpicsLoaded: AsyncRoute.EpicsLoaded,
+      error: null
     }
 
-    componentWillMount() {
-      console.log(`COMPONENT WILL MOUNT`, this.context)
+    componentDidMount() {
+      console.log(`here`, this.context)
       const { Component, ReducersLoaded, EpicsLoaded } = this.state
       const shouldLoadReducers = !ReducersLoaded && getReducers
       const shouldLoadEpics = !EpicsLoaded && getEpics
+      const { registerEpics, registerReducers } = this.context
 
       if (!Component || shouldLoadReducers || shouldLoadEpics) {
         this._componentWillUnmountSubject = new Subject()
-
+        console.log(`here`)
         const streams = [
           Component
             ? Observable.of(Component)
@@ -60,7 +72,8 @@ export default function asyncRoute(getComponent, getReducers, getEpics, beforeMo
             Observable.fromPromise(getReducers())
               .map(module => esModule(module, true))
               .map(reducers => {
-                this.context.registerReducers(reducers)
+                console.log(`newReducers`, reducers)
+                registerReducers(reducers)
                 AsyncRoute.ReducersLoaded = true
               })
               .takeUntil(this._componentWillUnmountSubject)
@@ -72,31 +85,31 @@ export default function asyncRoute(getComponent, getReducers, getEpics, beforeMo
             streams.push(
                 Observable.fromPromise(getEpics())
                 .map(epics => {
-                  this.context.registerEpics(epics)
+                  console.log(`NEW EPICS`, epics)
+                  registerEpics(epics)
                   AsyncRoute.EpicsLoaded = true
                 })
                 .takeUntil(this._componentWillUnmountSubject)
             )
             console.log(this.state)
         }
-
         Observable.zip(...streams)
-          .takeUntil(this._componentWillUnmountSubject)
-          .subscribe(([Component]) => {
-            if (this._mounted) {
-              this.setState({Component})
-            } else {
-              this.setState({Component})
-            }
+        .takeUntil(this._componentWillUnmountSubject)
+        .subscribe(
+          ([AsyncComponent]) => {
+            this.setState({ Component: AsyncComponent })
+            console.log(`here`, this.state)
 
             this._componentWillUnmountSubject.unsubscribe()
-          })
+          },
+          error => {
+            this.setState({ error })
+          },
+        )
       }
-    }
-
-    componentDidMount() {
       this._mounted = true
     }
+
 
     componentWillUnmount() {
       if (this._componentWillUnmountSubject && !this._componentWillUnmountSubject.closed) {
@@ -106,7 +119,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics, beforeMo
     }
 
     render() {
-      console.log(this.state)
+      console.log(`here`, this.state)
       const { Component } = this.state
       return Component ? <Component {...this.props} /> : null
     }
