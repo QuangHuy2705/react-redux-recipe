@@ -6,7 +6,7 @@ import Loadable from 'react-loadable'
 import { BrowserRouter, Switch, Route } from 'react-router-dom'
 
 const Main = Loadable({
-  loader: () => import('../components/main/index.js'),
+  loader: () => import('../components/Main/index.js'),
   loading: () => <div>Loading...</div>,
   timeout: 5000,
 })
