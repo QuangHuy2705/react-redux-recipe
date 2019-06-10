@@ -20,6 +20,8 @@ function esModule(module, forceArray) {
   return forceArray ? [defualted] : defualted
 }
 
+
+
 export default function asyncRoute(getComponent, getReducers, getEpics) {
   console.log(`a`)
   return class AsyncRoute extends Component {
@@ -27,7 +29,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
       store: PropTypes.object.isRequired,
       registerEpics: PropTypes.func.isRequired,
       registerReducers: PropTypes.func.isRequired,
-      // withRefreshedStore: PropTypes.func.isRequired,
+      withRefreshedStore: PropTypes.func.isRequired,
     }
 
     static Component = null
@@ -69,6 +71,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
             Observable.fromPromise(getReducers())
               .map(module => esModule(module, true))
               .map(reducers => {
+                console.log(`newReducers`, reducers)
                 registerReducers(reducers)
                 AsyncRoute.ReducersLoaded = true
               })
@@ -80,6 +83,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
             streams.push(
                 Observable.fromPromise(getEpics())
                 .map(epics => {
+                  console.log(`NEW EPICS`, epics)
                   registerEpics(epics)
                   AsyncRoute.EpicsLoaded = true
                 })
@@ -90,8 +94,9 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
         .takeUntil(this._componentWillUnmountSubject)
         .subscribe(
           ([AsyncComponent]) => {
-            console.log(`here`, this.state)
             this.setState({ Component: AsyncComponent })
+            console.log(`here`, this.state)
+
             this._componentWillUnmountSubject.unsubscribe()
           },
           error => {

@@ -1,10 +1,11 @@
 import { BehaviorSubject } from 'rxjs';
 import { combineEpics, createEpicMiddleware } from 'redux-observable';
 import { createStore, applyMiddleware, combineReducers, compose } from 'redux';
-import { mergeMap } from 'rxjs/operators'
+import { mergeMap, filter, mapTo } from 'rxjs/operators'
 import { epic1, epic2 } from './epics/index'
 import { compose as recompose, defaultProps } from 'recompose'
 import StoreContainer from './store_provider'
+import { noop, functions } from 'lodash'
 
 const reduceReducers = (reducers) => (state, action) =>
     reducers.reduce((result, reducer) => (
@@ -12,6 +13,16 @@ const reduceReducers = (reducers) => (state, action) =>
     ), state);
 
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
+const getNameFunc = func =>
+  func.displayName || func.name || func._name || ''
+
+const normalizeEpic = (epic = noop, namespace = 'main') => {
+  const name = getNameFunc(epic)
+  epic.displayName =
+    name.indexOf('___') === -1 ? `${namespace}___${name}` : name
+  return epic
+}
 
 class StoreBuilder {
     constructor() {
@@ -21,13 +32,9 @@ class StoreBuilder {
         this.epic$.subscribe((epic) => {
             console.log(`ADDED NEW EPIC`)
         })
-        this.rootEpic = (action$, state$) => {
-            return this.epic$.pipe(
-                mergeMap(epic => {
-                    return epic(action$, state$)
-                })
-            )
-        }
+        this.rootEpic = (action$, state$) => this.epic$.pipe(
+            mergeMap(epic => epic(action$, state$))
+          )
 
         this.reducerMap = {}
     }
@@ -38,12 +45,19 @@ class StoreBuilder {
 
             this.reducerMap[name].push(reducer);
         });
+        // this.store.replaceReducer(this.createRootReducer());
     }
     registerEpics = epic => {
         if (this.epicRegistry.indexOf(epic) === -1) {
-            this.epicRegistry.push(epic);
-            console.log(epic)
-            this.epic$.next(epic);
+            // this.epicRegistry.push(epic);
+            // console.log(this.epicRegistry)
+            // this.epic$.next(
+            //     epic
+            // );
+            const epicFuncs = functions(epic)
+            epicFuncs.forEach(epicName =>
+              this.epic$.next(normalizeEpic(epic[`${epicName}`])),
+            )
         }
     }
 
@@ -57,8 +71,8 @@ class StoreBuilder {
 
     createStore = () => {
         const epicMiddleware = createEpicMiddleware()
-        epicMiddleware.run(this.rootEpic)
         this.store = createStore(this.createRootReducer(), composeEnhancers(applyMiddleware(epicMiddleware)));
+        epicMiddleware.run(this.rootEpic)
         return this
     }
 
@@ -83,7 +97,7 @@ class StoreBuilder {
                 store: this.store,
                 registerEpics: this.registerEpics.bind(this),
                 registerReducers: this.registerReducers.bind(this),
-                withRefreshedStore: this.withRefreshedStore.bind(this)
+                withRefreshedStore: this.withRefreshedStore.bind(this),
             }),
         )
 
