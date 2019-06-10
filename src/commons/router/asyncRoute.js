@@ -2,8 +2,6 @@ import React, { Component, PropTypes } from 'react'
 import { isArray } from 'lodash'
 import { Observable } from 'rxjs/Observable'
 import { Subject } from 'rxjs/Subject'
-import { injectReducers } from 'actions/registry'
-import { injectEpics } from 'actions/registry'
 import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/takeUntil'
 import 'rxjs/add/observable/zip'
@@ -23,10 +21,14 @@ function esModule(module, forceArray) {
 
 export default function asyncRoute(getComponent, getReducers, getEpics) {
   return class AsyncRoute extends Component {
+    constructor(props) {
+      super(props)
+      console.log(`a`)
+    }
     static contextTypes = {
-      store: PropTypes.shape({
-        dispatch: PropTypes.func.isRequired
-      })
+      store: PropTypes.object.isRequired,
+      registerEpics: PropTypes.func.isRequired,
+      registerReducers: PropTypes.func.isRequired,
     }
 
     static Component = null
@@ -40,6 +42,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
     }
 
     componentWillMount() {
+      console.log(this.context)
       const { Component, ReducersLoaded, EpicsLoaded } = this.state
       const shouldLoadReducers = !ReducersLoaded && getReducers
       const shouldLoadEpics = !EpicsLoaded && getEpics
@@ -65,7 +68,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
             Observable.fromPromise(getReducers())
               .map(module => esModule(module, true))
               .map(reducers => {
-                this.context.store.dispatch(injectReducers(reducers))
+                this.context.registerReducers(reducers)
                 AsyncRoute.ReducersLoaded = true
               })
               .takeUntil(this._componentWillUnmountSubject)
@@ -76,13 +79,12 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
             streams.push(
                 Observable.fromPromise(getEpics())
                 .map(epics => {
-                  this.context.store.dispatch(injectEpics(epics))
+                  this.context.registerEpics(epics)
                   AsyncRoute.EpicsLoaded = true
                 })
                 .takeUntil(this._componentWillUnmountSubject)
             )
         }
-
         Observable.zip(...streams)
           .takeUntil(this._componentWillUnmountSubject)
           .subscribe(([Component]) => {
@@ -98,6 +100,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
     }
 
     componentDidMount() {
+      console.log(`a`)
       this._mounted = true
     }
 
@@ -109,6 +112,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
     }
 
     render() {
+      console.log(`a`)
       const { Component } = this.state
       return Component ? <Component {...this.props} /> : null
     }

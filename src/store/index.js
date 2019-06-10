@@ -1,14 +1,15 @@
 import { BehaviorSubject } from 'rxjs';
-import { combineEpics, createEpicMiddleware  } from 'redux-observable';
+import { combineEpics, createEpicMiddleware } from 'redux-observable';
 import { createStore, applyMiddleware, combineReducers, compose } from 'redux';
 import { mergeMap } from 'rxjs/operators'
 import { epic1, epic2 } from './epics/index'
-import { recompose } from 'recompose'
+import { compose as recompose, defaultProps } from 'recompose'
+import StoreContainer from './store_provider'
 
 const reduceReducers = (reducers) => (state, action) =>
-  reducers.reduce((result, reducer) => (
-    reducer(result, action)
-  ), state);
+    reducers.reduce((result, reducer) => (
+        reducer(result, action)
+    ), state);
 
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 
@@ -23,7 +24,6 @@ class StoreBuilder {
         this.rootEpic = (action$, state$) => {
             return this.epic$.pipe(
                 mergeMap(epic => {
-                    console.log(epic)
                     return epic(action$, state$)
                 })
             )
@@ -35,7 +35,7 @@ class StoreBuilder {
     registerReducers = reducerMap => {
         Object.entries(reducerMap).forEach(([name, reducer]) => {
             if (!this.reducerMap[name]) this.reducerMap[name] = [];
-    
+
             this.reducerMap[name].push(reducer);
         });
     }
@@ -48,17 +48,17 @@ class StoreBuilder {
 
     createRootReducer = () => {
         return (
-          combineReducers(Object.keys(this.reducerMap).reduce((result, key) => Object.assign(result, {
-            [key]: reduceReducers(this.reducerMap[key]),
-          }), {}))
+            combineReducers(Object.keys(this.reducerMap).reduce((result, key) => Object.assign(result, {
+                [key]: reduceReducers(this.reducerMap[key]),
+            }), {}))
         );
     }
 
     createStore = () => {
-        console.log(this.rootEpic)
         const epicMiddleware = createEpicMiddleware();
         this.store = createStore(this.createRootReducer(), composeEnhancers(applyMiddleware(epicMiddleware)));
-        epicMiddleware.run(this.rootEpic);
+        epicMiddleware.run(this.rootEpic)
+        return this
     }
 
     refreshStore = () => {
@@ -72,14 +72,23 @@ class StoreBuilder {
                 return module
             })
             .catch(err => {
-                throw(err)
+                throw (err)
             })
     }
 
-    createStoreProvider(store) {
-        const enhance = 
+    createStoreProvider() {
+        const enhance = recompose(
+            defaultProps({
+                store: this.store,
+                registerEpics: this.registerEpics.bind(this),
+                registerReducers: this.registerReducers.bind(this),
+                withRefreshedStore: this.withRefreshedStore.bind(this)
+            }),
+        )
+
+        return enhance(StoreContainer)
     }
 
 }
 
-export default StoreBuilder
+export default new StoreBuilder()

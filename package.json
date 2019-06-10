@@ -13,7 +13,8 @@
     "recompose": "^0.30.0",
     "redux": "^4.0.1",
     "redux-observable": "^1.1.0",
-    "rxjs": "^6.5.2"
+    "rxjs": "^6.5.2",
+    "rxjs-compat": "^6.5.2"
   },
   "scripts": {
     "start": "react-scripts start",
