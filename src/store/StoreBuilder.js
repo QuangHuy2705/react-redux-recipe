@@ -4,7 +4,14 @@ import { createStore, applyMiddleware, combineReducers, compose } from 'redux';
 import { mergeMap } from 'rxjs/operators'
 import { compose as recompose, defaultProps } from 'recompose'
 import StoreContainer from './StoreContainer.js'
-import { noop, functions } from 'lodash'
+import { noop, functions, isEmpty } from 'lodash'
+
+const test = (state, action) => {
+    switch(action.type) {
+        default: 
+            return {test: 'works'}
+    }
+}
 
 const reduceReducers = (reducers) => (state, action) =>
     reducers.reduce((result, reducer) => (
@@ -96,7 +103,9 @@ class StoreBuilder {
     }
 
     createRootReducer = () => {
-
+        if (isEmpty(this.reducerMap)) {
+            return (state = {}) => state
+        }
         return (
             combineReducers(Object.keys(this.reducerMap).reduce((result, key) => Object.assign(result, {
                 [key]: reduceReducers(this.reducerMap[key]),
