@@ -53,15 +53,15 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
         const streams = [
           Component
             ? Observable.of(Component)
-                .takeUntil(this._componentWillUnmountSubject)
+              .takeUntil(this._componentWillUnmountSubject)
             : Observable.fromPromise(getComponent())
-                .map(esModule)
-                .map(Component => {
-                  console.log(`LOADED`, Component)
-                  AsyncRoute.Component = Component
-                  return Component
-                })
-                .takeUntil(this._componentWillUnmountSubject)
+              .map(esModule)
+              .map(Component => {
+                console.log(`LOADED`, Component)
+                AsyncRoute.Component = Component
+                return Component
+              })
+              .takeUntil(this._componentWillUnmountSubject)
         ]
 
         if (shouldLoadReducers) {
@@ -73,35 +73,33 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
                 registerReducers(reducers)
                 AsyncRoute.ReducersLoaded = true
               })
-
               .takeUntil(this._componentWillUnmountSubject)
-              )
-          console.log(this.state)
+          )
         }
 
         if (shouldLoadEpics) {
-            streams.push(
-                Observable.fromPromise(getEpics())
-                .map(epics => {
-                  console.log(`NEW EPICS`, epics)
-                  registerEpics(epics)
-                  AsyncRoute.EpicsLoaded = true
-                })
-                .takeUntil(this._componentWillUnmountSubject)
-            )
+          streams.push(
+            Observable.fromPromise(getEpics())
+              .map(epics => {
+                console.log(`NEW EPICS`, epics)
+                registerEpics(epics)
+                AsyncRoute.EpicsLoaded = true
+              })
+              .takeUntil(this._componentWillUnmountSubject)
+          )
         }
         Observable.zip(...streams)
-        .takeUntil(this._componentWillUnmountSubject)
-        .subscribe(
-          ([AsyncComponent]) => {
-            this.setState({ Component: AsyncComponent })
-            this._componentWillUnmountSubject.unsubscribe()
-          },
-          error => {
-            console.log(error)
-            this.setState({ error })
-          },
-        )
+          .takeUntil(this._componentWillUnmountSubject)
+          .subscribe(
+            ([AsyncComponent]) => {
+              this.setState({ Component: AsyncComponent })
+              this._componentWillUnmountSubject.unsubscribe()
+            },
+            error => {
+              console.log(error)
+              this.setState({ error })
+            },
+          )
       }
       this._mounted = true
     }

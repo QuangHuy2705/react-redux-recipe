@@ -11,16 +11,14 @@ const reduceReducers = (reducers) => (state, action) =>
         reducer(result, action)
     ), state);
 
-const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
-
 const getNameFunc = func =>
-  func.displayName || func.name || func._name || ''
+    func.displayName || func.name || func._name || ''
 
 const normalizeEpic = (epic = noop, namespace = 'main') => {
-  const name = getNameFunc(epic)
-  epic.displayName =
-    name.indexOf('___') === -1 ? `${namespace}___${name}` : name
-  return epic
+    const name = getNameFunc(epic)
+    epic.displayName =
+        name.indexOf('___') === -1 ? `${namespace}___${name}` : name
+    return epic
 }
 
 // const setFnName = (fn, name) =>
@@ -41,7 +39,7 @@ class StoreBuilder {
         })
         this.rootEpic = (action$, state$) => this.epic$.pipe(
             mergeMap(epic => epic(action$, state$))
-          )
+        )
 
         this.reducerMap = {}
     }
@@ -49,11 +47,11 @@ class StoreBuilder {
     getReducers = () => {
         return combineReducers(this.reducerMap)
     }
- 
+
     registerReducers = reducerMap => {
         Object.entries(reducerMap).forEach(([name, reducer]) => {
             if (!this.reducerMap[name]) this.reducerMap[name] = [];
-
+            console.log(reducer)
             this.reducerMap[name].push(reducer);
         });
         this.store.replaceReducer(this.createRootReducer());
@@ -79,9 +77,9 @@ class StoreBuilder {
     updateReducers() {
         const newReducers = this.getCombineReducers()
         this.store &&
-          this.store.replaceReducer &&
-          this.store.replaceReducer(newReducers)
-      }
+            this.store.replaceReducer &&
+            this.store.replaceReducer(newReducers)
+    }
 
     registerEpics = epic => {
         if (this.epicRegistry.indexOf(epic) === -1) {
@@ -92,12 +90,13 @@ class StoreBuilder {
             // );
             const epicFuncs = functions(epic)
             epicFuncs.forEach(epicName =>
-              this.epic$.next(normalizeEpic(epic[`${epicName}`])),
+                this.epic$.next(normalizeEpic(epic[`${epicName}`])),
             )
         }
     }
 
     createRootReducer = () => {
+
         return (
             combineReducers(Object.keys(this.reducerMap).reduce((result, key) => Object.assign(result, {
                 [key]: reduceReducers(this.reducerMap[key]),
@@ -106,8 +105,9 @@ class StoreBuilder {
     }
 
     createStore = () => {
+        const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
         const epicMiddleware = createEpicMiddleware()
-        this.store = createStore(this.getReducers(), composeEnhancers(applyMiddleware(epicMiddleware)));
+        this.store = createStore(this.createRootReducer(), composeEnhancers(applyMiddleware(epicMiddleware)));
         epicMiddleware.run(this.rootEpic)
         return this
     }

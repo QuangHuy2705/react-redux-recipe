@@ -23,7 +23,6 @@ class StoreContainer extends React.Component {
 
     render() {
         const { store, children } = this.props
-        console.log(this.props.store)
         return (
             <Provider store={store}>
                 <div>
