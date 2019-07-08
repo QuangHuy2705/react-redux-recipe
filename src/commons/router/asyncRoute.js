@@ -54,7 +54,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
           Component
             ? Observable.of(Component)
               .takeUntil(this._componentWillUnmountSubject)
-            : Observable.fromPromise(getComponent())
+            : Observable.fromPromise(getComponent)
               .map(esModule)
               .map(Component => {
                 console.log(`LOADED`, Component)
@@ -66,7 +66,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
 
         if (shouldLoadReducers) {
           streams.push(
-            Observable.fromPromise(getReducers())
+            Observable.fromPromise(getReducers)
               .map(module => esModule(module, true))
               .map(reducers => {
                 console.log(`newReducers`, reducers)
@@ -79,7 +79,7 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
 
         if (shouldLoadEpics) {
           streams.push(
-            Observable.fromPromise(getEpics())
+            Observable.fromPromise(getEpics)
               .map(epics => {
                 console.log(`NEW EPICS`, epics)
                 registerEpics(epics)

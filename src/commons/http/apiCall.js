@@ -5,6 +5,7 @@ const token = localStorage.getItem('JWT')
 class HTTPRequest {
     constructor() {
         this.headers = {
+            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         }
 
