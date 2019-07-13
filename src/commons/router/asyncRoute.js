@@ -1,15 +1,12 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { isArray } from 'lodash'
-import { Observable } from 'rxjs/Observable'
+import { Observable, of, zip, from } from 'rxjs'
 import { Subject } from 'rxjs/Subject'
-import 'rxjs/add/operator/map'
-import 'rxjs/add/operator/takeUntil'
-import 'rxjs/add/observable/zip'
-import 'rxjs/add/observable/of'
-import 'rxjs/add/observable/fromPromise'
+import { map, takeUntil } from 'rxjs/operators';
 
 const moduleDefaultExport = module => module.default || module
+
 
 function esModule(module, forceArray) {
   if (isArray(module)) {
@@ -20,9 +17,8 @@ function esModule(module, forceArray) {
   return forceArray ? [defualted] : defualted
 }
 
-
-
 export default function asyncRoute(getComponent, getReducers, getEpics) {
+
   return class AsyncRoute extends Component {
     static contextTypes = {
       store: PropTypes.object.isRequired,
@@ -43,6 +39,8 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
     }
 
     componentDidMount() {
+      console.log(Observable)
+
       const { Component, ReducersLoaded, EpicsLoaded } = this.state
       const shouldLoadReducers = !ReducersLoaded && getReducers
       const shouldLoadEpics = !EpicsLoaded && getEpics
@@ -52,44 +50,56 @@ export default function asyncRoute(getComponent, getReducers, getEpics) {
         this._componentWillUnmountSubject = new Subject()
         const streams = [
           Component
-            ? Observable.of(Component)
-              .takeUntil(this._componentWillUnmountSubject)
-            : Observable.fromPromise(getComponent)
-              .map(esModule)
-              .map(Component => {
-                console.log(`LOADED`, Component)
-                AsyncRoute.Component = Component
-                return Component
-              })
-              .takeUntil(this._componentWillUnmountSubject)
+            ? of(Component)
+              .pipe(
+                takeUntil(this._componentWillUnmountSubject)
+              )
+            : from(getComponent)
+              .pipe(
+                map(esModule),
+                map(Component => {
+                  console.log(`LOADED`, Component)
+                  AsyncRoute.Component = Component
+                  return Component
+                }),
+                takeUntil(this._componentWillUnmountSubject)
+              )
         ]
 
         if (shouldLoadReducers) {
           streams.push(
-            Observable.fromPromise(getReducers)
-              .map(module => esModule(module, true))
-              .map(reducers => {
-                console.log(`newReducers`, reducers)
-                registerReducers(reducers)
-                AsyncRoute.ReducersLoaded = true
-              })
-              .takeUntil(this._componentWillUnmountSubject)
+            from(getReducers)
+              .pipe(
+                map(module => esModule(module, true)),
+                map(reducers => {
+                  console.log(`newReducers`, reducers)
+                  registerReducers(reducers)
+                  AsyncRoute.ReducersLoaded = true
+                }),
+                takeUntil(this._componentWillUnmountSubject)
+              )
+
           )
         }
 
         if (shouldLoadEpics) {
           streams.push(
-            Observable.fromPromise(getEpics)
-              .map(epics => {
-                console.log(`NEW EPICS`, epics)
-                registerEpics(epics)
-                AsyncRoute.EpicsLoaded = true
-              })
-              .takeUntil(this._componentWillUnmountSubject)
+            from(getEpics)
+              .pipe(
+                map(epics => {
+                  console.log(`NEW EPICS`, epics)
+                  registerEpics(epics)
+                  AsyncRoute.EpicsLoaded = true
+                }),
+                takeUntil(this._componentWillUnmountSubject)
+              )
+
           )
         }
-        Observable.zip(...streams)
-          .takeUntil(this._componentWillUnmountSubject)
+        zip(...streams)
+          .pipe(
+            takeUntil(this._componentWillUnmountSubject),
+          )
           .subscribe(
             ([AsyncComponent]) => {
               this.setState({ Component: AsyncComponent })
