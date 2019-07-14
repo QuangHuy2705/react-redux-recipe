@@ -7,9 +7,9 @@ import StoreContainer from './StoreContainer.js'
 import { noop, functions, isEmpty } from 'lodash'
 
 const test = (state, action) => {
-    switch(action.type) {
-        default: 
-            return {test: 'works'}
+    switch (action.type) {
+        default:
+            return { test: 'works' }
     }
 }
 
@@ -57,9 +57,8 @@ class StoreBuilder {
 
     registerReducers = reducerMap => {
         Object.entries(reducerMap).forEach(([name, reducer]) => {
-            if (!this.reducerMap[name]) this.reducerMap[name] = [];
-            console.log(reducer)
-            this.reducerMap[name].push(reducer);
+            if (!this.reducerMap[reducer.name]) this.reducerMap[reducer.name] = [];
+            this.reducerMap[reducer.name].push(reducer);
         });
         this.store.replaceReducer(this.createRootReducer());
         // if (isObject(reducerMap)) {
