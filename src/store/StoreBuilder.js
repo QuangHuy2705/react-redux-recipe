@@ -6,13 +6,6 @@ import { compose as recompose, defaultProps } from 'recompose'
 import StoreContainer from './StoreContainer.js'
 import { noop, functions, isEmpty } from 'lodash'
 
-const test = (state, action) => {
-    switch (action.type) {
-        default:
-            return { test: 'works' }
-    }
-}
-
 const reduceReducers = (reducers) => (state, action) =>
     reducers.reduce((result, reducer) => (
         reducer(result, action)
@@ -27,14 +20,6 @@ const normalizeEpic = (epic = noop, namespace = 'main') => {
         name.indexOf('___') === -1 ? `${namespace}___${name}` : name
     return epic
 }
-
-// const setFnName = (fn, name) =>
-//   Object.defineProperty(fn, 'name', { value: name })
-
-// const normalizeReducer = (key, reducer) => {
-//     const temp = reducer || noop
-//     return setFnName(temp, key)
-//   }
 
 class StoreBuilder {
     constructor() {
@@ -61,23 +46,6 @@ class StoreBuilder {
             this.reducerMap[reducer.name].push(reducer);
         });
         this.store.replaceReducer(this.createRootReducer());
-        // if (isObject(reducerMap)) {
-        //     let appendedReducer = {}
-        //     functions(reducerMap).forEach(reducerKey => {
-        //       if (this.reducerMap.includes(reducerKey)) {
-        //         return this
-        //       } else {
-        //         const reducer = normalizeReducer(
-        //           reducerKey,
-        //           reducerMap[`${reducerKey}`],
-        //         )
-        //         appendedReducer[reducerKey] = reducer
-        //       }
-        //     })
-        //     this.reducerRegistry = this.reducerMap.merge(appendedReducer)
-        //     this.updateReducers()
-        //     return this
-        //   }
     }
 
     updateReducers() {
@@ -89,11 +57,6 @@ class StoreBuilder {
 
     registerEpics = epic => {
         if (this.epicRegistry.indexOf(epic) === -1) {
-            // this.epicRegistry.push(epic);
-            // console.log(this.epicRegistry)
-            // this.epic$.next(
-            //     epic
-            // );
             const epicFuncs = functions(epic)
             epicFuncs.forEach(epicName =>
                 this.epic$.next(normalizeEpic(epic[`${epicName}`])),
