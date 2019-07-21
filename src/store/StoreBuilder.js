@@ -36,9 +36,9 @@ class StoreBuilder {
         this.reducerMap = {}
     }
 
-    getReducers = () => {
-        return combineReducers(this.reducerMap)
-    }
+    // getReducers = () => {
+    //     return combineReducers(this.reducerMap)
+    // }
 
     registerReducers = reducerMap => {
         Object.entries(reducerMap).forEach(([name, reducer]) => {
@@ -48,12 +48,12 @@ class StoreBuilder {
         this.store.replaceReducer(this.createRootReducer());
     }
 
-    updateReducers() {
-        const newReducers = this.getCombineReducers()
-        this.store &&
-            this.store.replaceReducer &&
-            this.store.replaceReducer(newReducers)
-    }
+    // updateReducers() {
+    //     const newReducers = this.getCombineReducers()
+    //     this.store &&
+    //         this.store.replaceReducer &&
+    //         this.store.replaceReducer(newReducers)
+    // }
 
     registerEpics = epic => {
         if (this.epicRegistry.indexOf(epic) === -1) {
@@ -83,20 +83,20 @@ class StoreBuilder {
         return this
     }
 
-    refreshStore = () => {
-        this.store.replaceReducer(this.createRootReducer());
-    }
+    // refreshStore = () => {
+    //     this.store.replaceReducer(this.createRootReducer());
+    // }
 
-    withRefreshedStore = (importPromise) => {
-        return importPromise
-            .then(module => {
-                this.refreshStore()
-                return module
-            })
-            .catch(err => {
-                throw (err)
-            })
-    }
+    // withRefreshedStore = (importPromise) => {
+    //     return importPromise
+    //         .then(module => {
+    //             this.refreshStore()
+    //             return module
+    //         })
+    //         .catch(err => {
+    //             throw (err)
+    //         })
+    // }
 
     createStoreProvider() {
         const enhance = recompose(
@@ -104,7 +104,6 @@ class StoreBuilder {
                 store: this.store,
                 registerEpics: this.registerEpics.bind(this),
                 registerReducers: this.registerReducers.bind(this),
-                withRefreshedStore: this.withRefreshedStore.bind(this),
             }),
         )
 
